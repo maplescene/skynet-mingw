@@ -1,29 +1,39 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
+#include "sys/socket.h"
 #include <unistd.h>
 #include <stdbool.h>
-#include "sys/socket.h"
+#include <time.h>
 
 #define HAVE_STRUCT_TIMESPEC
 
+/*<signal.h>*/
+#define	SIGHUP	1
+#define SA_RESTART	0x0002
 struct sigaction {
 	void (*sa_handler)(int);
+	sigset_t sa_mask;              
+    int sa_flags;    
 };
 enum { SIGPIPE };
-void sigaction(int flag, struct sigaction *action, int param);
+
+int sigfillset(sigset_t *set);
+int sigemptyset(sigset_t *set);
+int sigaction(int sig, const struct sigaction *act, struct sigaction *oact);
+/*<signal.h>*/
 
 char *strsep(char **stringp, const char *delim);
 
 enum { CLOCK_THREAD_CPUTIME_ID, CLOCK_REALTIME, CLOCK_MONOTONIC };
-int clock_gettime(int what, struct timespec *ti);
+#define clock_gettime clock_gettime_platform
+int clock_gettime_platform(int what, struct timespec *ti);
 
 enum { LOCK_EX, LOCK_NB };
 
 const char *inet_ntop(int af, const void *src, char *dst, size_t size); 
 int kill(pid_t pid, int exit_code);
 int daemon(int a, int b);
-void sigaction(int flag, struct sigaction *action, int param);
 int flock(int fd, int flag);
 
 #define O_NONBLOCK 1
@@ -41,10 +51,13 @@ int fcntl(int fd, int cmd, long arg);
 
 typedef int poll_fd;
 
+/*skynet/skynet-src/socket_poll.h*/
 struct event {
 	void * s;
 	bool read;
 	bool write;
+	bool error;
+	bool eof;
 };
 
 bool sp_invalid(poll_fd fd);
